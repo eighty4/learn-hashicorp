@@ -1,0 +1,57 @@
+---
+
+- name: Install required packages
+  ansible.builtin.apt:
+    update_cache: yes
+    name: gpg
+    state: present
+
+- name: Install HashiCorp apt key
+  ansible.builtin.apt_key:
+    url: https://apt.releases.hashicorp.com/gpg
+    state: present
+
+- name: Install Consul
+  ansible.builtin.apt:
+    update_cache: yes
+    name: consul
+    state: present
+
+- name: Create data dir
+  ansible.builtin.file:
+    path: /opt/consul
+    owner: consul
+    group: consul
+    state: directory
+
+- name: Create log dir
+  file:
+    path: /var/log/consul
+    owner: consul
+    group: consul
+    state: directory
+
+- name: Install config
+  ansible.builtin.template:
+    src: consul.hcl.j2
+    dest: /etc/consul.d/consul.hcl
+
+- name: Install cloud auto-join config
+  ansible.builtin.template:
+    src: consul.cloud.hcl.j2
+    dest: /etc/consul.d/consul.cloud.hcl
+  when: consul.cloud.gcp is defined
+
+- name: Install Consul systemd service
+  ansible.builtin.template:
+    src: consul.service.j2
+    dest: /etc/systemd/user/consul.service
+
+- name: Enable Consul systemd service
+  ansible.builtin.systemd:
+    name: consul
+    enabled: yes
+
+- name: Configure DNS forwarding
+  include_tasks: dns.yml
+  when: consul.configure_dns_forwarding is defined and consul.configure_dns_forwarding | bool

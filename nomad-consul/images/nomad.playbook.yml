@@ -1,0 +1,8 @@
+---
+
+- name: Provision a Nomad machine image
+  hosts: all
+  become: true
+  tasks:
+    - import_role:
+        name: nomad
